@@ -116,7 +116,7 @@ function addItemToTree(
   tree: TemplateItem,
   newItem: TemplateItem,
   targetPath: string,
-  currentPath = ""
+  currentPath = "",
 ): TemplateItem {
   if (!tree || !("folderName" in tree)) return tree;
 
@@ -153,14 +153,16 @@ function removeItemFromTree(
   tree: TemplateItem,
   targetItem: TemplateItem,
   parentPath: string,
-  currentPath = ""
+  currentPath = "",
 ): TemplateItem {
   if (!tree || !("folderName" in tree)) return tree;
 
   if (parentPath === "") {
     return {
       ...tree,
-      items: (tree.items || []).filter((child) => !isSameItem(child, targetItem)),
+      items: (tree.items || []).filter(
+        (child) => !isSameItem(child, targetItem),
+      ),
     };
   }
 
@@ -175,7 +177,9 @@ function removeItemFromTree(
         if (childPath === parentPath) {
           return {
             ...child,
-            items: (child.items || []).filter((item) => !isSameItem(item, targetItem)),
+            items: (child.items || []).filter(
+              (item) => !isSameItem(item, targetItem),
+            ),
           };
         }
 
@@ -191,7 +195,7 @@ function renameItemInTree(
   targetItem: TemplateItem,
   updatedItem: TemplateItem,
   parentPath: string,
-  currentPath = ""
+  currentPath = "",
 ): TemplateItem {
   if (!tree || !("folderName" in tree)) return tree;
 
@@ -199,7 +203,7 @@ function renameItemInTree(
     return {
       ...tree,
       items: (tree.items || []).map((child) =>
-        isSameItem(child, targetItem) ? updatedItem : child
+        isSameItem(child, targetItem) ? updatedItem : child,
       ),
     };
   }
@@ -216,12 +220,18 @@ function renameItemInTree(
           return {
             ...child,
             items: (child.items || []).map((item) =>
-              isSameItem(item, targetItem) ? updatedItem : item
+              isSameItem(item, targetItem) ? updatedItem : item,
             ),
           };
         }
 
-        return renameItemInTree(child, targetItem, updatedItem, parentPath, childPath);
+        return renameItemInTree(
+          child,
+          targetItem,
+          updatedItem,
+          parentPath,
+          childPath,
+        );
       }
       return child;
     }),
@@ -238,7 +248,17 @@ interface NewFileDialogProps {
   onClose: () => void;
 }
 
-const COMMON_EXTENSIONS = ["js", "ts", "jsx", "tsx", "json", "html", "css", "py", "md"];
+const COMMON_EXTENSIONS = [
+  "js",
+  "ts",
+  "jsx",
+  "tsx",
+  "json",
+  "html",
+  "css",
+  "py",
+  "md",
+];
 
 const NewFileDialog: React.FC<NewFileDialogProps> = ({
   isOpen,
@@ -262,7 +282,10 @@ const NewFileDialog: React.FC<NewFileDialogProps> = ({
 
   React.useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
         setIsDropdownOpen(false);
       }
     };
@@ -625,7 +648,9 @@ const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
               Delete {itemType === "file" ? "File" : "Folder"}
             </h2>
             <p className="mt-1.5 text-sm text-zinc-400 leading-relaxed">
-              Are you sure you want to delete <span className="font-medium text-zinc-200">"{itemName}"</span>? This action cannot be undone.
+              Are you sure you want to delete{" "}
+              <span className="font-medium text-zinc-200">"{itemName}"</span>?
+              This action cannot be undone.
             </p>
           </div>
         </div>
@@ -672,7 +697,8 @@ const TemplateNode = ({
   onRenameFolder,
 }: TemplateNodeProps) => {
   const [isNewFileDialogOpen, setIsNewFileDialogOpen] = React.useState(false);
-  const [isNewFolderDialogOpen, setIsNewFolderDialogOpen] = React.useState(false);
+  const [isNewFolderDialogOpen, setIsNewFolderDialogOpen] =
+    React.useState(false);
   const [isRenameDialogOpen, setIsRenameDialogOpen] = React.useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
   const [isOpen, setIsOpen] = React.useState(true);
@@ -919,10 +945,6 @@ const TemplateNode = ({
   );
 };
 
-// -------------------------------------------------------------
-// Template File Tree (Root)
-// -------------------------------------------------------------
-
 const TemplateFileTree = ({
   data,
   onFileSelect,
@@ -940,7 +962,8 @@ const TemplateFileTree = ({
 }: TemplateFileTreeProps) => {
   const [treeData, setTreeData] = React.useState<TemplateItem | null>(data);
   const [isNewFileDialogOpen, setIsNewFileDialogOpen] = React.useState(false);
-  const [isNewFolderDialogOpen, setIsNewFolderDialogOpen] = React.useState(false);
+  const [isNewFolderDialogOpen, setIsNewFolderDialogOpen] =
+    React.useState(false);
 
   React.useEffect(() => {
     setTreeData(data);
@@ -964,26 +987,42 @@ const TemplateFileTree = ({
   }
 
   const isRootFolder =
-    typeof treeData === "object" && treeData !== null && "folderName" in treeData;
+    typeof treeData === "object" &&
+    treeData !== null &&
+    "folderName" in treeData;
 
   // Handlers that update local UI immediately AND call parent callbacks
   const handleAddFileInternal = (file: TemplateFile, parentPath: string) => {
-    setTreeData((prev) => (prev ? addItemToTree(prev, file, parentPath) : prev));
+    setTreeData((prev) =>
+      prev ? addItemToTree(prev, file, parentPath) : prev,
+    );
     onAddFile?.(file, parentPath);
   };
 
-  const handleAddFolderInternal = (folder: TemplateFolder, parentPath: string) => {
-    setTreeData((prev) => (prev ? addItemToTree(prev, folder, parentPath) : prev));
+  const handleAddFolderInternal = (
+    folder: TemplateFolder,
+    parentPath: string,
+  ) => {
+    setTreeData((prev) =>
+      prev ? addItemToTree(prev, folder, parentPath) : prev,
+    );
     onAddFolder?.(folder, parentPath);
   };
 
   const handleDeleteFileInternal = (file: TemplateFile, parentPath: string) => {
-    setTreeData((prev) => (prev ? removeItemFromTree(prev, file, parentPath) : prev));
+    setTreeData((prev) =>
+      prev ? removeItemFromTree(prev, file, parentPath) : prev,
+    );
     onDeleteFile?.(file, parentPath);
   };
 
-  const handleDeleteFolderInternal = (folder: TemplateFolder, parentPath: string) => {
-    setTreeData((prev) => (prev ? removeItemFromTree(prev, folder, parentPath) : prev));
+  const handleDeleteFolderInternal = (
+    folder: TemplateFolder,
+    parentPath: string,
+  ) => {
+    setTreeData((prev) =>
+      prev ? removeItemFromTree(prev, folder, parentPath) : prev,
+    );
     onDeleteFolder?.(folder, parentPath);
   };
 
@@ -991,7 +1030,7 @@ const TemplateFileTree = ({
     file: TemplateFile,
     newFilename: string,
     newExtension: string,
-    parentPath: string
+    parentPath: string,
   ) => {
     const updatedFile: TemplateFile = {
       ...file,
@@ -999,7 +1038,7 @@ const TemplateFileTree = ({
       fileExtension: newExtension,
     };
     setTreeData((prev) =>
-      prev ? renameItemInTree(prev, file, updatedFile, parentPath) : prev
+      prev ? renameItemInTree(prev, file, updatedFile, parentPath) : prev,
     );
     onRenameFile?.(file, newFilename, newExtension, parentPath);
   };
@@ -1007,14 +1046,14 @@ const TemplateFileTree = ({
   const handleRenameFolderInternal = (
     folder: TemplateFolder,
     newFolderName: string,
-    parentPath: string
+    parentPath: string,
   ) => {
     const updatedFolder: TemplateFolder = {
       ...folder,
       folderName: newFolderName,
     };
     setTreeData((prev) =>
-      prev ? renameItemInTree(prev, folder, updatedFolder, parentPath) : prev
+      prev ? renameItemInTree(prev, folder, updatedFolder, parentPath) : prev,
     );
     onRenameFolder?.(folder, newFolderName, parentPath);
   };
@@ -1090,10 +1129,7 @@ const TemplateFileTree = ({
         isOpen={isNewFileDialogOpen}
         onClose={() => setIsNewFileDialogOpen(false)}
         onCreate={(filename, fileExtension) =>
-          handleAddFileInternal(
-            { filename, fileExtension, content: "" },
-            ""
-          )
+          handleAddFileInternal({ filename, fileExtension, content: "" }, "")
         }
       />
 
@@ -1101,10 +1137,7 @@ const TemplateFileTree = ({
         isOpen={isNewFolderDialogOpen}
         onClose={() => setIsNewFolderDialogOpen(false)}
         onCreate={(folderName) =>
-          handleAddFolderInternal(
-            { folderName, items: [] },
-            ""
-          )
+          handleAddFolderInternal({ folderName, items: [] }, "")
         }
       />
     </Sidebar>
