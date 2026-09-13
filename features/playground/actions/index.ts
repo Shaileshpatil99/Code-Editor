@@ -11,6 +11,7 @@ export const getPlaygroundById = async (id:string)=>{
             select:{
                 title:true,
                 description:true,
+                template:true,
                 templateFiles:{
                     select:{
                         content:true
@@ -40,8 +41,28 @@ export const SaveUpdatedCode = async(playgroundId:string, data:TemplateFolder)=>
                 playgroundId,
                 content:JSON.stringify(data)
             }
-        })
+        });
     } catch (error) {
-        
+        console.error("Error in SaveUpdatedCode:", error);
     }
-}
+};
+
+export const updatePlaygroundTemplate = async (
+  playgroundId: string,
+  newTemplate: import("@/lib/generated/prisma").Templates
+) => {
+  const user = await currentUser();
+  if (!user) return { success: false, error: "Unauthorized" };
+
+  try {
+    await db.playground.update({
+      where: { id: playgroundId },
+      data: { template: newTemplate },
+    });
+    revalidatePath(`/playground/${playgroundId}`);
+    return { success: true };
+  } catch (error: any) {
+    console.error("Failed to update playground template:", error);
+    return { success: false, error: error?.message || "Failed to update template" };
+  }
+};

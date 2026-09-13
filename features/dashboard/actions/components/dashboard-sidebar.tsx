@@ -220,6 +220,7 @@ export function DashboardSidebar({
           <SidebarMenuItem>
             <SidebarMenuButton
               render={<Link href="/settings" />}
+              isActive={pathname === "/settings"}
               tooltip="Settings"
             >
               <Settings className="h-4 w-4" />

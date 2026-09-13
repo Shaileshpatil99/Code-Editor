@@ -47,7 +47,7 @@ export default async function RootLayout({
           >
             {children}
 
-            <Toaster position="top-right" richColors />
+            <Toaster position="top-right" richColors duration={1000} closeButton />
           </ThemeProvider>
         </SessionProvider>
       </body>

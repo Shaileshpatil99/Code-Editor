@@ -60,7 +60,8 @@ enum Templates{
   ANGULAR
   JAVA
   CPP
-
+  C
+  PYTHON
 }
 
 model Playground{

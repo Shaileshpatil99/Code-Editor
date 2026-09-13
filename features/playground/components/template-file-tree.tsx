@@ -760,7 +760,7 @@ const TemplateNode = ({
             }
           >
             <ChevronRight className="h-4 w-4 shrink-0 rotate-0 transition-transform duration-200 group-data-[state=open]:rotate-90" />
-            <span>📁</span>
+            <span className="shrink-0">📁</span>
             <span className="truncate">{folder.folderName}</span>
           </CollapsibleTrigger>
 
@@ -896,7 +896,7 @@ const TemplateNode = ({
           isSelected ? "bg-accent" : ""
         }`}
       >
-        <span>📄</span>
+        <span className="shrink-0">📄</span>
         <span className="truncate">{fullFileName}</span>
       </button>
 
@@ -971,10 +971,12 @@ const TemplateFileTree = ({
 
   if (!treeData) {
     return (
-      <Sidebar>
+      <Sidebar collapsible="none" className="w-full h-full border-r-0 min-w-0 select-none overflow-hidden">
         <SidebarContent>
-          <SidebarGroup>
-            <SidebarGroupLabel>{title}</SidebarGroupLabel>
+          <SidebarGroup className="p-2 min-w-0">
+            <SidebarGroupLabel className="truncate whitespace-nowrap">
+              {title || "File Explorer"}
+            </SidebarGroupLabel>
             <SidebarGroupContent>
               <div className="px-3 py-2 text-sm text-muted-foreground">
                 Loading files...
@@ -1059,11 +1061,13 @@ const TemplateFileTree = ({
   };
 
   return (
-    <Sidebar>
+    <Sidebar collapsible="none" className="w-full h-full border-r-0 min-w-0 select-none overflow-hidden">
       <SidebarContent>
-        <SidebarGroup>
+        <SidebarGroup className="p-2 min-w-0">
           {/* HEADER */}
-          <SidebarGroupLabel>{title}</SidebarGroupLabel>
+          <SidebarGroupLabel className="truncate whitespace-nowrap">
+            {title || "File Explorer"}
+          </SidebarGroupLabel>
 
           {/* ADD BUTTON */}
           <DropdownMenu>
@@ -1086,7 +1090,7 @@ const TemplateFileTree = ({
 
           {/* FILE TREE */}
           <SidebarGroupContent>
-            <div className="w-full">
+            <div className="w-full min-w-0">
               {isRootFolder ? (
                 (treeData as TemplateFolder).items.map((child, index) => (
                   <TemplateNode

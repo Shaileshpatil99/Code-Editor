@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useEffect, useCallback } from "react";
+import React, { useRef, useEffect } from "react";
 import Editor, { type Monaco } from "@monaco-editor/react";
 import { TemplateFile } from "../lib/path-to-json";
 import {
@@ -8,7 +8,7 @@ import {
   defaultEditorOptions,
   getEditorLanguage,
 } from "@/features/playground/lib/editor-config";
-import { isValueExpired } from "next/dist/client/components/segment-cache/cache-map";
+import { useEditorSettings } from "@/features/settings/hooks/useEditorSettings";
 
 interface PlaygroundEditorProps {
   activeFile: TemplateFile | undefined;
@@ -23,6 +23,7 @@ const PlaygroundEditor = ({
 }: PlaygroundEditorProps) => {
   const editorRef = useRef<any>(null);
   const monacoRef = useRef<Monaco | null>(null);
+  const { settings } = useEditorSettings();
 
   const handleEditorDidMount = (editor: any, monaco: Monaco) => {
     editorRef.current = editor;
@@ -47,35 +48,55 @@ const PlaygroundEditor = ({
 
   useEffect(() => {
     updateEditorLanguage();
-  }, [activeFile]);
+  }, [activeFile])
 
-  return <div className="h-full relative">
-    {/* AI thinging */}
+  // Update Monaco options dynamically when settings change
+  useEffect(() => {
+    if (editorRef.current) {
+      editorRef.current.updateOptions({
+        fontSize: settings.fontSize,
+        fontFamily: settings.fontFamily,
+        tabSize: settings.tabSize,
+        minimap: { enabled: settings.minimap },
+        wordWrap: settings.wordWrap,
+        lineNumbers: settings.lineNumbers,
+        cursorStyle: settings.cursorStyle,
+        cursorBlinking: settings.cursorBlinking,
+        bracketPairColorization: { enabled: settings.bracketPairColorization },
+      });
+    }
+  }, [settings]);
 
-
-    <Editor
+  return (
+    <div className="h-full relative">
+      <Editor
         height={"100%"}
         value={Content}
-        onChange={(value)=>onContentChange(value || "")}
+        onChange={(value) => onContentChange(value || "")}
         onMount={handleEditorDidMount}
         language={activeFile ? getEditorLanguage(activeFile.fileExtension || "") : "plaintext"}
         //@ts-ignore
         options={{
-        ...defaultEditorOptions,
-        rulers: [],                     
-        renderWhitespace: "none",
-        guides: {
-        indentation: false,          
-        bracketPairs: false,
-    },
-  }}
-    
-    />
-  </div>;
+          ...defaultEditorOptions,
+          fontSize: settings.fontSize,
+          fontFamily: settings.fontFamily,
+          tabSize: settings.tabSize,
+          minimap: { enabled: settings.minimap },
+          wordWrap: settings.wordWrap,
+          lineNumbers: settings.lineNumbers,
+          cursorStyle: settings.cursorStyle,
+          cursorBlinking: settings.cursorBlinking,
+          bracketPairColorization: { enabled: settings.bracketPairColorization },
+          rulers: [],
+          renderWhitespace: "none",
+          guides: {
+            indentation: false,
+            bracketPairs: settings.bracketPairColorization,
+          },
+        }}
+      />
+    </div>
+  );
 };
 
 export default PlaygroundEditor;
-
-
-
-

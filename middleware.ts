@@ -1,7 +1,6 @@
 import NextAuth from "next-auth";
 import authConfig from "./auth.config";
 import { apiAuthPrefix, publicRoutes,authRoutes, DEFAULT_LOGIN_REDIRECT } from "./routes";
-import { DEFAULT_CIPHERS } from "tls";
 
 const {auth} = NextAuth(authConfig);
 
@@ -10,7 +9,7 @@ export default auth((req)=>{
     const isLoggedIn = !!req.auth;
 
     const isApiAuthRoute = nextUrl.pathname.startsWith(apiAuthPrefix);
-    const isPublicRoute = publicRoutes.includes(nextUrl.pathname);
+    const isPublicRoute = publicRoutes.includes(nextUrl.pathname) || nextUrl.pathname.startsWith("/docs");
     const isAuthRoute = authRoutes.includes(nextUrl.pathname);
 
     if(isApiAuthRoute){

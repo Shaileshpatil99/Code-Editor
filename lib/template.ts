@@ -8,4 +8,6 @@ export const templatePaths = {
 
   CPP: "starters-main/cpp",
   JAVA: "starters-main/java",
+  C: "starters-main/c",
+  PYTHON: "starters-main/python",
 };

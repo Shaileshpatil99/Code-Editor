@@ -40,7 +40,9 @@ type TemplateSelectionModalProps = {
       | "HONO"
       | "ANGULAR"
       | "JAVA"
-      | "CPP";
+      | "CPP"
+      | "C"
+      | "PYTHON";
     description?: string;
   }) => void;
 };
@@ -179,6 +181,34 @@ const templates: TemplateOption[] = [
     features: ["High Performance", "Object-Oriented", "STL Support"],
     category: "language",
   },
+
+  // C
+  {
+    id: "c",
+    name: "C",
+    description:
+      "A foundational, high-performance procedural programming language widely used in systems, drivers, and low-level development.",
+    icon: "/c.svg",
+    color: "#A8B9CC",
+    popularity: 5,
+    tags: ["C", "Procedural", "Programming", "System"],
+    features: ["High Performance", "Direct Memory Access", "Minimal Overhead"],
+    category: "language",
+  },
+
+  // Python
+  {
+    id: "python",
+    name: "Python",
+    description:
+      "A versatile, powerful interpreted programming language known for clean syntax, scripting, and rapid prototyping.",
+    icon: "/python.svg",
+    color: "#3776AB",
+    popularity: 5,
+    tags: ["Python", "Scripting", "Dynamic", "Data"],
+    features: ["Interpreted", "Interactive I/O", "Extensive Standard Library"],
+    category: "language",
+  },
 ];
 
 const TemplateSelectionModal = ({
@@ -241,6 +271,8 @@ const TemplateSelectionModal = ({
       | "ANGULAR"
       | "JAVA"
       | "CPP"
+      | "C"
+      | "PYTHON"
     > = {
       react: "REACT",
       nextjs: "NEXTJS",
@@ -250,6 +282,8 @@ const TemplateSelectionModal = ({
       angular: "ANGULAR",
       java: "JAVA",
       cpp: "CPP",
+      c: "C",
+      python: "PYTHON",
     };
 
     const template = templates.find(

@@ -1,16 +1,24 @@
 "use client"
 
+import * as React from "react"
 import * as ResizablePrimitive from "react-resizable-panels"
 
 import { cn } from "@/lib/utils"
 
 function ResizablePanelGroup({
   className,
+  direction,
+  orientation,
   ...props
-}: ResizablePrimitive.GroupProps) {
+}: ResizablePrimitive.GroupProps & {
+  direction?: "horizontal" | "vertical"
+}) {
+  const resolvedOrientation = orientation ?? direction ?? "horizontal"
+
   return (
     <ResizablePrimitive.Group
       data-slot="resizable-panel-group"
+      orientation={resolvedOrientation}
       className={cn(
         "flex h-full w-full aria-[orientation=vertical]:flex-col",
         className
@@ -20,8 +28,19 @@ function ResizablePanelGroup({
   )
 }
 
-function ResizablePanel({ ...props }: ResizablePrimitive.PanelProps) {
-  return <ResizablePrimitive.Panel data-slot="resizable-panel" {...props} />
+function ResizablePanel({
+  panelRef,
+  ...props
+}: ResizablePrimitive.PanelProps & {
+  panelRef?: React.Ref<ResizablePrimitive.PanelImperativeHandle | null>
+}) {
+  return (
+    <ResizablePrimitive.Panel
+      data-slot="resizable-panel"
+      panelRef={panelRef}
+      {...props}
+    />
+  )
 }
 
 function ResizableHandle({

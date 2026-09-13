@@ -18,7 +18,9 @@ export default async function DashboardLayout({
         HONO: "FlameIcon",
         ANGULAR: "Terminal",
         JAVA:"Coffee",
-        CPP:"Code2"
+        CPP:"Code2",
+        C:"Code2",
+        PYTHON:"Terminal"
     }
 
     const formattedPlaygroundData = playgroundData?.map((playground) => ({

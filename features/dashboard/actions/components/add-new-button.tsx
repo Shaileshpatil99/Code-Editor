@@ -10,17 +10,11 @@ import { toast } from "sonner";
 import TemplateSelectionModal from "./template-selection-modal";
 import { createPlayground } from "..";
 
+import { Templates } from "@/lib/generated/prisma";
+
 type TemplateData = {
   title: string;
-  template:
-    | "REACT"
-    | "NEXTJS"
-    | "EXPRESS"
-    | "VUE"
-    | "HONO"
-    | "ANGULAR"
-    | "JAVA"
-    | "CPP";
+  template: Templates;
   description?: string;
 };
 

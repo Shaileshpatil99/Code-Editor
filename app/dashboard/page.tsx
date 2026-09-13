@@ -20,7 +20,7 @@ const Page = async() => {
       playgrounds && playgrounds.length === 0 ? (<EmptyState title='No project Found' description='Create a new project to get started' imageSrc='/empty-state.svg'/>) : (
           <ProjectTable
           
-            projects={playgrounds || []}
+            projects={(playgrounds as any) || []}
             onDeleteProject={deleteProjectById}
             onUpdateProject={editProjectById}
             onDuplicateProject={duplicateProjectById}

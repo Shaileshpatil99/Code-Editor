@@ -34,7 +34,7 @@ async signIn({user,account,profile}){
                         tokenType: account.token_type,
                         scope: account.scope,
                         idToken:account.id_token,
-                        sessionState: account.session_state, 
+                        sessionState: account.session_state ? String(account.session_state) : undefined, 
                     },
                 },
             },
@@ -65,7 +65,7 @@ async signIn({user,account,profile}){
                     tokenType: account.token_type,
                     scope: account.scope,
                     idToken:account.id_token,
-                    sessionState: account.session_state,   
+                    sessionState: account.session_state ? String(account.session_state) : undefined,   
                 }
             });
         }

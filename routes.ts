@@ -5,7 +5,11 @@
  */
 
 export const publicRoutes: string[] = [
-   
+    "/docs",
+    "/api/settings/diagnostics",
+    "/api/execute/run",
+    "/api/execute/stdin",
+    "/api/execute/stop",
 ]
 
 /**
