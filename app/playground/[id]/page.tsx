@@ -22,21 +22,11 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 
-import {
-  FileText,
-  Save,
-  X,
-  Settings,
-  Bot,
-} from "lucide-react";
+import { FileText, Save, X, Settings, Bot } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import {
   DropdownMenu,
@@ -49,19 +39,13 @@ import {
 import { TemplateFile } from "@/features/playground/types";
 import PlaygroundEditor from "@/features/playground/components/playground-editor";
 
-
 const Page = () => {
   const { id } = useParams<{ id: string }>();
 
   const [isPreviewVisible, setPreviewVisible] = React.useState(true);
 
-  const {
-    playgroundData,
-    templateData,
-    isLoading,
-    error,
-    saveTemplateData,
-  } = usePlayground(id);
+  const { playgroundData, templateData, isLoading, error, saveTemplateData } =
+    usePlayground(id);
 
   const {
     activeFileId,
@@ -91,20 +75,11 @@ const Page = () => {
     if (id) {
       setPlaygroundId(id);
     }
-  }, [
-    templateData,
-    id,
-    setTemplateData,
-    setPlaygroundId,
-  ]);
+  }, [templateData, id, setTemplateData, setPlaygroundId]);
 
-  const activeFile = openFiles.find(
-    (file) => file.id === activeFileId
-  );
+  const activeFile = openFiles.find((file) => file.id === activeFileId);
 
-  const hasUnsavedChanges = openFiles.some(
-    (file) => file.hasUnsavedChanges
-  );
+  const hasUnsavedChanges = openFiles.some((file) => file.hasUnsavedChanges);
 
   const handleFileSelect = (file: TemplateFile) => {
     openFile(file);
@@ -123,10 +98,7 @@ const Page = () => {
           <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
             <SidebarTrigger className="-ml-1" />
 
-            <Separator
-              orientation="vertical"
-              className="mr-2 h-4"
-            />
+            <Separator orientation="vertical" className="mr-2 h-4" />
 
             <div className="flex flex-1 items-center gap-2">
               <div className="flex flex-1 flex-col">
@@ -148,19 +120,14 @@ const Page = () => {
                         size="sm"
                         variant="outline"
                         onClick={() => {}}
-                        disabled={
-                          !activeFile ||
-                          !activeFile.hasUnsavedChanges
-                        }
+                        disabled={!activeFile || !activeFile.hasUnsavedChanges}
                       >
                         <Save className="size-4" />
                       </Button>
                     }
                   />
 
-                  <TooltipContent>
-                    Save (Ctrl + S)
-                  </TooltipContent>
+                  <TooltipContent>Save (Ctrl + S)</TooltipContent>
                 </Tooltip>
 
                 <Tooltip>
@@ -178,19 +145,13 @@ const Page = () => {
                     }
                   />
 
-                  <TooltipContent>
-                    Save All (Ctrl + Shift + S)
-                  </TooltipContent>
+                  <TooltipContent>Save All (Ctrl + Shift + S)</TooltipContent>
                 </Tooltip>
 
                 <Tooltip>
                   <TooltipTrigger
                     render={
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {}}
-                      >
+                      <Button size="sm" variant="outline" onClick={() => {}}>
                         <Bot className="h-4 w-4" />
                         TOGGLE AI
                       </Button>
@@ -205,10 +166,7 @@ const Page = () => {
                 <DropdownMenu>
                   <DropdownMenuTrigger
                     render={
-                      <Button
-                        size="sm"
-                        variant="outline"
-                      >
+                      <Button size="sm" variant="outline">
                         <Settings className="size-4" />
                       </Button>
                     }
@@ -216,18 +174,14 @@ const Page = () => {
 
                   <DropdownMenuContent>
                     <DropdownMenuItem
-                      onClick={() =>
-                        setPreviewVisible(!isPreviewVisible)
-                      }
+                      onClick={() => setPreviewVisible(!isPreviewVisible)}
                     >
                       {isPreviewVisible ? "Hide" : "Show"} Preview
                     </DropdownMenuItem>
 
                     <DropdownMenuSeparator />
 
-                    <DropdownMenuItem
-                      onClick={closeAllFiles}
-                    >
+                    <DropdownMenuItem onClick={closeAllFiles}>
                       Close All Files
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -293,26 +247,24 @@ const Page = () => {
                     </div>
                   </Tabs>
                 </div>
-
+                     
                 <div className="flex-1 overflow-auto">
-
-                  <ResizablePanelGroup direction = "horizontal"
+                  
+                  <ResizablePanelGroup
+                   // @ts-ignore
+                    direction="horizontal"
                     className="h-full "
                   >
                     <ResizablePanel defaultSize={isPreviewVisible ? 50 : 100}>
-
                       <PlaygroundEditor
                         activeFile={activeFile}
-                        Content={activeFile?.content ||   ""}
-                        onContentChange={(value)=>
-                          activeFileId && updateFileContent(activeFileId , value)
+                        Content={activeFile?.content || ""}
+                        onContentChange={(value) =>
+                          activeFileId && updateFileContent(activeFileId, value)
                         }
                       />
-
                     </ResizablePanel>
-
                   </ResizablePanelGroup>
-                 
                 </div>
               </div>
             ) : (
@@ -320,9 +272,7 @@ const Page = () => {
                 <FileText className="size-16 text-gray-300" />
 
                 <div className="text-center">
-                  <p className="text-lg font-medium">
-                    No open files
-                  </p>
+                  <p className="text-lg font-medium">No open files</p>
 
                   <p className="text-sm">
                     Select a file from a sidebar to start editing.

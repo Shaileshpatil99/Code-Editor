@@ -58,12 +58,24 @@ const PlaygroundEditor = ({
         value={Content}
         onChange={(value)=>onContentChange(value || "")}
         onMount={handleEditorDidMount}
-        language={activeFile ? getEditorLanguage(activeFile.fileExtension || "") : "plainText"}
+        language={activeFile ? getEditorLanguage(activeFile.fileExtension || "") : "plaintext"}
         //@ts-ignore
-        options={defaultEditorOptions}
+        options={{
+        ...defaultEditorOptions,
+        rulers: [],                     
+        renderWhitespace: "none",
+        guides: {
+        indentation: false,          
+        bracketPairs: false,
+    },
+  }}
     
     />
   </div>;
 };
 
 export default PlaygroundEditor;
+
+
+
+
