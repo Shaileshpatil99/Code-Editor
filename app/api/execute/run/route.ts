@@ -3,6 +3,7 @@ import { spawn } from "child_process";
 import fs from "fs/promises";
 import path from "path";
 import os from "os";
+import { auth } from "@/auth";
 import {
   registerProcess,
   cleanupTempDir,
@@ -28,6 +29,10 @@ function isSafePath(filePath: string): boolean {
 
 export async function POST(req: NextRequest) {
   try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { "Content-Type": "application/json" } });
+    }
     const body = (await req.json()) as ExecuteRequestBody;
     const { runId, template, files, sourceFiles, mainClass, activeFile } = body;
 
@@ -116,9 +121,9 @@ export async function POST(req: NextRequest) {
               data: "\x1b[36m[Compiling C++ project with MinGW g++...]\x1b[0m\r\n",
             });
 
-            // Filter C++ source files
-            const cppFiles = sourceFiles.filter((f) =>
-              /\.(cpp|cc|cxx|c)$/i.test(f)
+            // Filter C++ source files strictly (excluding .c files)
+            let cppFiles = sourceFiles.filter((f) =>
+              /\.(cpp|cc|cxx)$/i.test(f)
             );
 
             if (cppFiles.length === 0) {
@@ -132,7 +137,49 @@ export async function POST(req: NextRequest) {
               return;
             }
 
-            const exeName = "main.exe";
+            const MAIN_FUNC_REGEX = /\b(int|void)\s+main\s*\(/;
+
+            // Check if activeFile matches a C++ file in the project
+            const normActive = activeFile ? activeFile.replace(/^\/+/, "").toLowerCase() : undefined;
+            const activeCpp = normActive
+              ? cppFiles.find((f) => {
+                  const normF = f.replace(/^\/+/, "").toLowerCase();
+                  return normF === normActive || normF.endsWith("/" + normActive) || normActive.endsWith("/" + normF);
+                })
+              : undefined;
+
+            if (activeCpp) {
+              // The user is currently viewing activeCpp: prioritize compiling and running it!
+              // Exclude other files that define main() to avoid multiple definition linker errors
+              const activeHasMain = MAIN_FUNC_REGEX.test(files[activeCpp] || "");
+              if (activeHasMain) {
+                cppFiles = cppFiles.filter(
+                  (f) => f === activeCpp || !MAIN_FUNC_REGEX.test(files[f] || "")
+                );
+              } else {
+                const mainFile =
+                  cppFiles.find((f) => f.toLowerCase().endsWith("main.cpp") && MAIN_FUNC_REGEX.test(files[f] || "")) ||
+                  cppFiles.find((f) => MAIN_FUNC_REGEX.test(files[f] || ""));
+                cppFiles = cppFiles.filter(
+                  (f) => f === activeCpp || f === mainFile || !MAIN_FUNC_REGEX.test(files[f] || "")
+                );
+              }
+            } else {
+              // No active C++ file opened: fallback to main.cpp or the first file with main()
+              const filesWithMain = cppFiles.filter((f) =>
+                MAIN_FUNC_REGEX.test(files[f] || "")
+              );
+              if (filesWithMain.length > 1) {
+                const defaultMain =
+                  cppFiles.find((f) => f.toLowerCase().endsWith("main.cpp")) ||
+                  filesWithMain[0];
+                cppFiles = cppFiles.filter(
+                  (f) => f === defaultMain || !MAIN_FUNC_REGEX.test(files[f] || "")
+                );
+              }
+            }
+
+            const exeName = process.platform === "win32" ? "main.exe" : "main";
             const compileArgs = [
               "-std=c++14",
               "-O2",
@@ -281,6 +328,10 @@ export async function POST(req: NextRequest) {
               return;
             }
 
+            if (mainClass && !/^[a-zA-Z_][a-zA-Z0-9_.]*$/.test(mainClass)) {
+              return new Response(JSON.stringify({ error: "Invalid class name" }), { status: 400, headers: { "Content-Type": "application/json" } });
+            }
+
             const binDir = path.join(tempDir, "bin");
             await fs.mkdir(binDir, { recursive: true });
 
@@ -399,8 +450,8 @@ export async function POST(req: NextRequest) {
               data: "\x1b[36m[Compiling C project with MinGW gcc...]\x1b[0m\r\n",
             });
 
-            // Filter C source files
-            const cFiles = sourceFiles.filter((f) => /\.(c)$/i.test(f));
+            // Filter C source files strictly
+            let cFiles = sourceFiles.filter((f) => /\.c$/i.test(f));
 
             if (cFiles.length === 0) {
               sendEvent({
@@ -413,7 +464,48 @@ export async function POST(req: NextRequest) {
               return;
             }
 
-            const exeName = "main.exe";
+            const MAIN_FUNC_REGEX = /\b(int|void)\s+main\s*\(/;
+
+            // Check if activeFile matches a C file in the project
+            const normActive = activeFile ? activeFile.replace(/^\/+/, "").toLowerCase() : undefined;
+            const activeC = normActive
+              ? cFiles.find((f) => {
+                  const normF = f.replace(/^\/+/, "").toLowerCase();
+                  return normF === normActive || normF.endsWith("/" + normActive) || normActive.endsWith("/" + normF);
+                })
+              : undefined;
+
+            if (activeC) {
+              // The user is currently viewing activeC: prioritize compiling and running it!
+              const activeHasMain = MAIN_FUNC_REGEX.test(files[activeC] || "");
+              if (activeHasMain) {
+                cFiles = cFiles.filter(
+                  (f) => f === activeC || !MAIN_FUNC_REGEX.test(files[f] || "")
+                );
+              } else {
+                const mainFile =
+                  cFiles.find((f) => f.toLowerCase().endsWith("main.c") && MAIN_FUNC_REGEX.test(files[f] || "")) ||
+                  cFiles.find((f) => MAIN_FUNC_REGEX.test(files[f] || ""));
+                cFiles = cFiles.filter(
+                  (f) => f === activeC || f === mainFile || !MAIN_FUNC_REGEX.test(files[f] || "")
+                );
+              }
+            } else {
+              // No active C file opened: fallback to main.c or the first file with main()
+              const filesWithMain = cFiles.filter((f) =>
+                MAIN_FUNC_REGEX.test(files[f] || "")
+              );
+              if (filesWithMain.length > 1) {
+                const defaultMain =
+                  cFiles.find((f) => f.toLowerCase().endsWith("main.c")) ||
+                  filesWithMain[0];
+                cFiles = cFiles.filter(
+                  (f) => f === defaultMain || !MAIN_FUNC_REGEX.test(files[f] || "")
+                );
+              }
+            }
+
+            const exeName = process.platform === "win32" ? "main.exe" : "main";
             const compileArgs = [
               "-std=c11",
               "-O2",
@@ -542,7 +634,17 @@ export async function POST(req: NextRequest) {
             let pyFile = "main.py";
             const pyFiles = sourceFiles.filter((f) => /\.py$/i.test(f));
 
-            if (activeFile && /\.py$/i.test(activeFile) && files[activeFile] !== undefined) {
+            const normActive = activeFile ? activeFile.replace(/^\/+/, "").toLowerCase() : undefined;
+            const activePy = normActive
+              ? pyFiles.find((f) => {
+                  const normF = f.replace(/^\/+/, "").toLowerCase();
+                  return normF === normActive || normF.endsWith("/" + normActive) || normActive.endsWith("/" + normF);
+                })
+              : undefined;
+
+            if (activePy && files[activePy] !== undefined) {
+              pyFile = activePy;
+            } else if (activeFile && /\.py$/i.test(activeFile) && files[activeFile] !== undefined) {
               pyFile = activeFile;
             } else if (files["main.py"] !== undefined) {
               pyFile = "main.py";
@@ -627,10 +729,11 @@ export async function POST(req: NextRequest) {
             await cleanupTempDir(tempDir);
             closeStream();
           }
-        } catch (err: any) {
+        } catch (err: unknown) {
+          const errorMessage = err instanceof Error ? err.message : String(err);
           sendEvent({
             type: "stderr",
-            data: `\r\n\x1b[31m[Internal runner error: ${err?.message}]\x1b[0m\r\n`,
+            data: `\r\n\x1b[31m[Internal runner error: ${errorMessage}]\x1b[0m\r\n`,
           });
           sendEvent({ type: "status", status: "FAILED" });
           await cleanupTempDir(tempDir);
@@ -646,10 +749,11 @@ export async function POST(req: NextRequest) {
         Connection: "keep-alive",
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Execution runner error:", error);
+    const errorMessage = error instanceof Error ? error.message : "Execution failed";
     return Response.json(
-      { error: error?.message || "Execution failed" },
+      { error: errorMessage },
       { status: 500 }
     );
   }

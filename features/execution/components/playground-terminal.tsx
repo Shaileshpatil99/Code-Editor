@@ -264,7 +264,7 @@ export const PlaygroundTerminal: React.FC<PlaygroundTerminalProps> = ({
         if (data === "\x1b[A") {
           const hist = historyRef.current;
           if (hist.length > 0) {
-            let nextIdx =
+            const nextIdx =
               historyIdxRef.current === -1
                 ? hist.length - 1
                 : historyIdxRef.current - 1;
@@ -291,7 +291,7 @@ export const PlaygroundTerminal: React.FC<PlaygroundTerminalProps> = ({
         if (data === "\x1b[B") {
           const hist = historyRef.current;
           if (historyIdxRef.current !== -1) {
-            let nextIdx = historyIdxRef.current + 1;
+            const nextIdx = historyIdxRef.current + 1;
             if (nextIdx < hist.length) {
               historyIdxRef.current = nextIdx;
               const nextCommand = hist[nextIdx];

@@ -26,12 +26,14 @@ interface FileExplorerState {
     newFile: TemplateFile,
     parentPath: string,
     writeFileSync: (filePath: string, content: string) => Promise<void>,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     instance: any,
     saveTemplateData: (data: TemplateFolder) => Promise<void>
   ) => Promise<void>;
   handleAddFolder: (
     newFolder: TemplateFolder, 
     parentPath: string, 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     instance: any, 
     saveTemplateData: (data: TemplateFolder) => Promise<void>
   ) => Promise<void>;

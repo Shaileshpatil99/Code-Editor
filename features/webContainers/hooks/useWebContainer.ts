@@ -1,11 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { WebContainer } from "@webcontainer/api";
-import { TemplateFolder } from "@/features/playground/types";
 import { getWebContainer } from "@/features/execution/services/providers/webcontainer-provider";
-
-interface UseWebContainerProps {
-  templateData?: TemplateFolder | null;
-}
 
 interface UseWebContainerReturn {
   serverUrl: string | null;
@@ -16,9 +11,7 @@ interface UseWebContainerReturn {
   destroy: () => void;
 }
 
-export const useWebContainer = (
-  _props?: UseWebContainerProps
-): UseWebContainerReturn => {
+export const useWebContainer = (): UseWebContainerReturn => {
   const [instance, setInstance] = useState<WebContainer | null>(null);
   const [serverUrl, setServerUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);

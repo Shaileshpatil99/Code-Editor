@@ -27,9 +27,18 @@ export const getPlaygroundById = async (id:string)=>{
 
 export const SaveUpdatedCode = async(playgroundId:string, data:TemplateFolder)=>{
     const user = await currentUser();
-    if(!user) return null;
+    if(!user) return { success: false, error: "Unauthorized" };
      
     try {
+        const playground = await db.playground.findUnique({
+            where: { id: playgroundId },
+            select: { userId: true }
+        });
+
+        if (!playground || playground.userId !== user.id) {
+            return { success: false, error: "Not authorized to update this playground" };
+        }
+
         const updatePlayground = await db.templateFiles.upsert({
             where:{
                 playgroundId
@@ -42,8 +51,11 @@ export const SaveUpdatedCode = async(playgroundId:string, data:TemplateFolder)=>
                 content:JSON.stringify(data)
             }
         });
-    } catch (error) {
+
+        return { success: true };
+    } catch (error: unknown) {
         console.error("Error in SaveUpdatedCode:", error);
+        return { success: false, error: error instanceof Error ? error.message : "Failed to save code" };
     }
 };
 
@@ -55,14 +67,23 @@ export const updatePlaygroundTemplate = async (
   if (!user) return { success: false, error: "Unauthorized" };
 
   try {
+    const playground = await db.playground.findUnique({
+      where: { id: playgroundId },
+      select: { userId: true }
+    });
+
+    if (!playground || playground.userId !== user.id) {
+      return { success: false, error: "Not authorized to update this playground" };
+    }
+
     await db.playground.update({
       where: { id: playgroundId },
       data: { template: newTemplate },
     });
     revalidatePath(`/playground/${playgroundId}`);
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Failed to update playground template:", error);
-    return { success: false, error: error?.message || "Failed to update template" };
+    return { success: false, error: error instanceof Error ? error.message : "Failed to update template" };
   }
 };

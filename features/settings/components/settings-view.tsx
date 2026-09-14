@@ -6,9 +6,7 @@ import {
   FONT_FAMILY_OPTIONS,
 } from "../hooks/useEditorSettings";
 import { useTerminalSettings } from "../hooks/useTerminalSettings";
-import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -19,12 +17,9 @@ import {
   Keyboard,
   User,
   RotateCcw,
-  Check,
   RefreshCw,
   CheckCircle2,
   XCircle,
-  Database,
-  LogOut,
   Search,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
@@ -100,13 +95,15 @@ export function SettingsView({ user }: { user?: UserProfile | null }) {
   };
 
   useEffect(() => {
-    loadDiagnostics();
-    if (typeof window !== "undefined") {
-      setBrowserIsolation({
-        crossOriginIsolated: window.crossOriginIsolated || false,
-        sharedArrayBuffer: typeof SharedArrayBuffer !== "undefined",
-      });
-    }
+    queueMicrotask(() => {
+      loadDiagnostics();
+      if (typeof window !== "undefined") {
+        setBrowserIsolation({
+          crossOriginIsolated: window.crossOriginIsolated || false,
+          sharedArrayBuffer: typeof SharedArrayBuffer !== "undefined",
+        });
+      }
+    });
   }, []);
 
   const shortcuts = [

@@ -2,7 +2,7 @@
 
 import { currentUser } from "@/features/auth/action";
 import { db } from "@/lib/db";
-import { Templates } from "@/lib/generated/prisma";
+import { Templates, Prisma } from "@/lib/generated/prisma";
 import { revalidatePath } from "next/cache";
 
 export const createPlayground = async (data: {
@@ -14,13 +14,15 @@ export const createPlayground = async (data: {
 
   const user = await currentUser();
 
+  if (!user?.id) throw new Error("Unauthorized");
+
   try {
     const playground = await db.playground.create({
       data: {
         title,
         description,
         template,
-        userId: user?.id!,
+        userId: user.id,
       },
     });
 
@@ -62,6 +64,18 @@ export const getPlaygroundForUser = async () => {
 };
 
 export const deleteProjectById = async (id: string) => {
+  const session = await currentUser();
+  if (!session?.id) throw new Error("Unauthorized");
+  
+  // Find the playground first to check ownership
+  const playground = await db.playground.findUnique({
+    where: { id },
+    select: { userId: true }
+  });
+  if (!playground || playground.userId !== session.id) {
+    throw new Error("Not authorized to delete this playground");
+  }
+
   try {
     await db.playground.delete({
       where: {
@@ -85,6 +99,18 @@ export const editProjectById = async (
     description: string;
   }
 ) => {
+  const session = await currentUser();
+  if (!session?.id) throw new Error("Unauthorized");
+  
+  // Find the playground first to check ownership
+  const playground = await db.playground.findUnique({
+    where: { id },
+    select: { userId: true }
+  });
+  if (!playground || playground.userId !== session.id) {
+    throw new Error("Not authorized to edit this playground");
+  }
+
   try {
     const updatedProject = await db.playground.update({
       where: {
@@ -107,6 +133,9 @@ export const editProjectById = async (
 };
 
 export const duplicateProjectById = async (id: string) => {
+  const user = await currentUser();
+  if (!user?.id) throw new Error("Unauthorized");
+
   try {
     const originalPlayground =
       await db.playground.findUnique({
@@ -119,15 +148,32 @@ export const duplicateProjectById = async (id: string) => {
       throw new Error("Playground not found");
     }
 
+    if (originalPlayground.userId !== user.id) {
+      throw new Error("Not authorized to duplicate this playground");
+    }
+
     const duplicatedPlayground =
       await db.playground.create({
         data: {
           title: `${originalPlayground.title} (Copy)`,
           description: originalPlayground.description,
           template: originalPlayground.template,
-          userId: originalPlayground.userId,
+          userId: user.id,
         },
       });
+
+    // Clone template files
+    const originalFiles = await db.templateFiles.findMany({
+      where: { playgroundId: originalPlayground.id }
+    });
+    for (const file of originalFiles) {
+      await db.templateFiles.create({
+        data: {
+          content: file.content as Prisma.InputJsonValue,
+          playgroundId: duplicatedPlayground.id
+        }
+      });
+    }
 
     revalidatePath("/dashboard");
 

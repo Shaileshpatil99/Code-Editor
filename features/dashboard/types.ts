@@ -10,12 +10,12 @@ export interface User {
   
   export interface Project {
     id: string
-    title: string
-    description: string
+    title?: string | null
+    description?: string | null
     template: string
-    createdAt: Date
-    updatedAt: Date
+    createdAt?: Date | null
+    updatedAt?: Date | null
     userId: string
-    user: User
-    Starmark: { isMarked: boolean }[]
+    user?: User | null
+    Starmark?: { isMarked: boolean }[]
   }

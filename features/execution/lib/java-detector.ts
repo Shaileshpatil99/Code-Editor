@@ -5,7 +5,7 @@ export interface JavaDetectionResult {
 }
 
 const MAIN_METHOD_REGEX =
-  /public\s+static\s+void\s+main\s*\(\s*String\s*(?:\[\s*\]\s*\w+|\w+\s*\[\s*\])\s*\)/;
+  /public\s+static\s+void\s+main\s*\(\s*String\s*(?:\[\s*\]\s*\w+|\w+\s*\[\s*\]|\.\.\.\s*\w+)\s*\)/;
 
 const PACKAGE_REGEX = /package\s+([a-zA-Z0-9_.]+)\s*;/;
 

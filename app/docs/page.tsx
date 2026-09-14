@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { DocsSidebar } from "@/features/docs/components/docs-sidebar";
 import { DocsContentView } from "@/features/docs/components/docs-content-view";
@@ -12,16 +12,9 @@ function DocsContentContainer() {
   const router = useRouter();
   const topicParam = searchParams.get("topic");
 
-  const [activeTopic, setActiveTopic] = useState<string>(topicParam || "overview");
-
-  useEffect(() => {
-    if (topicParam && DOCS_CONTENT[topicParam]) {
-      setActiveTopic(topicParam);
-    }
-  }, [topicParam]);
+  const activeTopic = (topicParam && DOCS_CONTENT[topicParam]) ? topicParam : "overview";
 
   const handleSelectDoc = (id: string) => {
-    setActiveTopic(id);
     router.push(`/docs?topic=${id}`, { scroll: true });
   };
 

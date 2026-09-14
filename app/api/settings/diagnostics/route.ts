@@ -101,9 +101,9 @@ export async function GET() {
       tools,
       timestamp: Date.now(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json(
-      { success: false, error: error?.message || "Diagnostic check failed" },
+      { success: false, error: error instanceof Error ? error.message : "Diagnostic check failed" },
       { status: 500 }
     );
   }

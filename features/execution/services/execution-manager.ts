@@ -99,9 +99,9 @@ export class ExecutionManager {
 
     try {
       await provider.run(context, onEvent);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Execution manager run error:", err);
-      terminal?.writeln(`\r\n\x1b[31m[Execution Failed: ${err.message}]\x1b[0m\r\n`);
+      terminal?.writeln(`\r\n\x1b[31m[Execution Failed: ${err instanceof Error ? err.message : String(err)}]\x1b[0m\r\n`);
       store.finishExecution("FAILED");
       this.activeProvider = null;
     }
@@ -128,8 +128,8 @@ export class ExecutionManager {
           terminal?.write(data);
         });
         store.finishExecution("EXITED", exitCode);
-      } catch (e: any) {
-        terminal?.writeln(`\r\n\x1b[31m[Shell error: ${e.message}]\x1b[0m\r\n`);
+      } catch (e: unknown) {
+        terminal?.writeln(`\r\n\x1b[31m[Shell error: ${e instanceof Error ? e.message : String(e)}]\x1b[0m\r\n`);
         store.finishExecution("FAILED");
       } finally {
         this.activeProvider = null;

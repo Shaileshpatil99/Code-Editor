@@ -273,9 +273,11 @@ const NewFileDialog: React.FC<NewFileDialogProps> = ({
 
   React.useEffect(() => {
     if (isOpen) {
-      setFilename("");
-      setFileExtension("js");
-      setIsDropdownOpen(false);
+      queueMicrotask(() => {
+        setFilename("");
+        setFileExtension("js");
+        setIsDropdownOpen(false);
+      });
       setTimeout(() => inputRef.current?.focus(), 50);
     }
   }, [isOpen]);
@@ -431,7 +433,7 @@ const NewFolderDialog: React.FC<NewFolderDialogProps> = ({
 
   React.useEffect(() => {
     if (isOpen) {
-      setFolderName("");
+      queueMicrotask(() => setFolderName(""));
       setTimeout(() => inputRef.current?.focus(), 50);
     }
   }, [isOpen]);
@@ -530,7 +532,7 @@ const RenameDialog: React.FC<RenameDialogProps> = ({
 
   React.useEffect(() => {
     if (isOpen) {
-      setName(initialValue);
+      queueMicrotask(() => setName(initialValue));
       setTimeout(() => {
         inputRef.current?.focus();
         inputRef.current?.select();
@@ -649,7 +651,7 @@ const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
             </h2>
             <p className="mt-1.5 text-sm text-zinc-400 leading-relaxed">
               Are you sure you want to delete{" "}
-              <span className="font-medium text-zinc-200">"{itemName}"</span>?
+              <span className="font-medium text-zinc-200">&quot;{itemName}&quot;</span>?
               This action cannot be undone.
             </p>
           </div>
@@ -966,7 +968,7 @@ const TemplateFileTree = ({
     React.useState(false);
 
   React.useEffect(() => {
-    setTreeData(data);
+    queueMicrotask(() => setTreeData(data));
   }, [data]);
 
   if (!treeData) {

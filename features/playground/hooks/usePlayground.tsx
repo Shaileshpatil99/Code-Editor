@@ -4,10 +4,15 @@ import { TemplateFolder } from "../lib/path-to-json";
 import { getPlaygroundForUser } from "@/features/dashboard/actions";
 import { getPlaygroundById, SaveUpdatedCode } from "../actions";
 
-interface PlaygroundData {
+import { Templates } from "@/lib/generated/prisma";
+
+export interface PlaygroundData {
   id: string;
   title?: string;
-  [key: string]: any;
+  description?: string | null;
+  template?: Templates;
+  userId?: string;
+  [key: string]: unknown;
 }
 
 interface usePlaygroundReturn {
@@ -34,7 +39,7 @@ export const usePlayground = (id: string): usePlaygroundReturn => {
 
       const data = await getPlaygroundById(id);
 
-      //  @ts-ignore
+      //  @ts-expect-error - Prisma return type mismatch with PlaygroundData
       setPlaygroundData(data);
       const rawContent = data?.templateFiles?.[0]?.content;
 
@@ -75,18 +80,21 @@ export const usePlayground = (id: string): usePlaygroundReturn => {
 
    const saveTemplateData = useCallback(async (data: TemplateFolder) => {
     try {
-      await SaveUpdatedCode(id, data);
-      setTemplateData(data);
-      toast.success("Changes saved successfully");
-    } catch (error) {
-      console.error("Error saving template data:", error);
+      const result = await SaveUpdatedCode(id, data);
+      if (result?.success) {
+        setTemplateData(data);
+        toast.success("Changes saved successfully");
+      } else {
+        toast.error(result?.error || "Failed to save changes");
+      }
+    } catch (err) {
+      console.error("Error saving playground:", err);
       toast.error("Failed to save changes");
-      throw error;
     }
   }, [id]);
 
   useEffect(() => {
-    loadPlayground();
+    queueMicrotask(() => { loadPlayground(); });
   }, [loadPlayground]);
 
    return {

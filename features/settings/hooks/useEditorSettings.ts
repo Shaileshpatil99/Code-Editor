@@ -49,12 +49,20 @@ function getStoredSettings(): EditorSettings {
 }
 
 export function useEditorSettings() {
-  const [settings, setSettings] = useState<EditorSettings>(DEFAULT_EDITOR_SETTINGS);
+  const [settings, setSettings] = useState<EditorSettings>(() => {
+    if (typeof window === "undefined") return DEFAULT_EDITOR_SETTINGS;
+    try {
+      const item = localStorage.getItem(STORAGE_KEY);
+      if (!item) return DEFAULT_EDITOR_SETTINGS;
+      return { ...DEFAULT_EDITOR_SETTINGS, ...JSON.parse(item) };
+    } catch {
+      return DEFAULT_EDITOR_SETTINGS;
+    }
+  });
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    setSettings(getStoredSettings());
-    setIsLoaded(true);
+    queueMicrotask(() => setIsLoaded(true));
 
     const handleSync = () => {
       setSettings(getStoredSettings());

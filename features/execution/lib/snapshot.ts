@@ -30,13 +30,31 @@ export function createProjectSnapshot(
   let activeFilePath: string | undefined;
 
   for (const openFile of openFiles) {
-    const filePath = findFilePath(openFile, rootFolder)?.replace(/^\/+/, "");
+    const ext = openFile.fileExtension ? `.${openFile.fileExtension}` : "";
+    const defaultName = `${openFile.filename}${ext}`;
+    const foundPath = findFilePath(openFile, rootFolder)?.replace(/^\/+/, "");
+    const filePath = (foundPath || openFile.id || defaultName).replace(/^\/+/, "");
+
     if (filePath) {
       openFileContentMap.set(filePath, openFile.content);
-      if (openFile.id === activeFileId) {
+      if (defaultName && defaultName !== filePath) {
+        openFileContentMap.set(defaultName, openFile.content);
+      }
+      if (
+        openFile.id === activeFileId ||
+        filePath === activeFileId ||
+        defaultName === activeFileId ||
+        (activeFileId && activeFileId.replace(/^\/+/, "") === filePath) ||
+        (activeFileId && activeFileId.replace(/^\/+/, "") === defaultName)
+      ) {
         activeFilePath = filePath;
       }
     }
+  }
+
+  // Fallback: if activeFilePath was not found in openFiles, resolve activeFileId directly
+  if (!activeFilePath && activeFileId) {
+    activeFilePath = activeFileId.replace(/^\/+/, "");
   }
 
   const flattenedFiles: Record<string, string> = {};
@@ -70,9 +88,20 @@ export function createProjectSnapshot(
 
   walk(clonedTree, "");
 
+  // Guarantee all openFiles are represented in flattenedFiles
+  for (const openFile of openFiles) {
+    const ext = openFile.fileExtension ? `.${openFile.fileExtension}` : "";
+    const defaultName = `${openFile.filename}${ext}`;
+    const foundPath = findFilePath(openFile, rootFolder)?.replace(/^\/+/, "");
+    const filePath = (foundPath || openFile.id || defaultName).replace(/^\/+/, "");
+    if (filePath && !flattenedFiles[filePath]) {
+      flattenedFiles[filePath] = openFile.content || "";
+    }
+  }
+
   // Extract explicit source files (for C++ and Java)
   const sourceFiles = Object.keys(flattenedFiles).filter((filePath) =>
-    /\.(cpp|cc|cxx|c|java)$/i.test(filePath)
+    /\.(cpp|cc|cxx|c|java|py)$/i.test(filePath)
   );
 
   return {

@@ -12,7 +12,7 @@ import {
 
 import TemplateFileTree from "@/features/playground/components/template-file-tree";
 import { useFileExplorer } from "@/features/playground/hooks/useFileExplorer";
-import { usePlayground } from "@/features/playground/hooks/usePlayground";
+import { usePlayground, PlaygroundData } from "@/features/playground/hooks/usePlayground";
 
 import { useParams, useRouter } from "next/navigation";
 import React, { useRef, useState, useCallback, useEffect } from "react";
@@ -21,6 +21,7 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
+import type { PanelImperativeHandle, PanelSize } from "react-resizable-panels";
 
 import {
   FileText,
@@ -29,12 +30,8 @@ import {
   Settings,
   Terminal as TerminalIcon,
   Globe,
-  ExternalLink,
   ChevronLeft,
   ChevronRight,
-  RotateCw,
-  Copy,
-  Check,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -48,7 +45,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 
-import { TemplateFile } from "@/features/playground/types";
+import { TemplateFile, TemplateFolder } from "@/features/playground/types";
 import PlaygroundEditor from "@/features/playground/components/playground-editor";
 
 import { PlaygroundTerminal } from "@/features/execution/components/playground-terminal";
@@ -57,6 +54,7 @@ import { executionManager } from "@/features/execution/services/execution-manage
 import { useExecutionStore } from "@/features/execution/hooks/useExecutionStore";
 import { Templates } from "@/lib/generated/prisma";
 import { updatePlaygroundTemplate } from "@/features/playground/actions";
+import { createProjectSnapshot } from "@/features/execution/lib/snapshot";
 import { toast } from "sonner";
 
 const detectLanguageFromFilename = (
@@ -130,11 +128,11 @@ const Page = () => {
   const { playgroundData, templateData, isLoading, error, saveTemplateData } =
     usePlayground(id);
 
-  const [currentPlayground, setCurrentPlayground] = useState<any>(null);
+  const [currentPlayground, setCurrentPlayground] = useState<PlaygroundData | null>(null);
 
   useEffect(() => {
     if (playgroundData) {
-      setCurrentPlayground(playgroundData);
+      queueMicrotask(() => setCurrentPlayground(playgroundData));
     }
   }, [playgroundData]);
 
@@ -169,29 +167,19 @@ const Page = () => {
   } | null>(null);
 
   // Horizontal sidebar panel ref and persisted size
-  const sidebarPanelRef = useRef<any>(null);
-  const [sidebarDefaultSize, setSidebarDefaultSize] = useState<number>(20);
+  const sidebarPanelRef = useRef<PanelImperativeHandle | null>(null);
+  const [sidebarDefaultSize] = useState<number>(20);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    try {
       const saved = localStorage.getItem("code_editor_sidebar_size");
       if (saved) {
         const parsed = parseFloat(saved);
         if (!isNaN(parsed) && parsed >= 14 && parsed <= 45) {
-          setSidebarDefaultSize(parsed);
-          if (sidebarPanelRef.current) {
-            sidebarPanelRef.current.resize(`${parsed}%`);
-          }
-        } else {
-          // Reset any corrupt or pixel-derived value to standard 20%
-          localStorage.setItem("code_editor_sidebar_size", "20");
-          setSidebarDefaultSize(20);
-          if (sidebarPanelRef.current) {
-            sidebarPanelRef.current.resize("20%");
-          }
+          sidebarPanelRef.current?.resize(parsed);
         }
       }
-    }
+    } catch {}
   }, []);
 
   React.useEffect(() => {
@@ -226,14 +214,14 @@ const Page = () => {
   // When previewUrl becomes available, automatically show preview tab for web templates
   React.useEffect(() => {
     if (previewUrl) {
-      setActiveBottomTab("preview");
+      queueMicrotask(() => setActiveBottomTab("preview"));
     }
   }, [previewUrl]);
 
   const activeFile = openFiles.find((file) => file.id === activeFileId);
   const hasUnsavedChanges = openFiles.some((file) => file.hasUnsavedChanges);
 
-  const activeTemplate = currentPlayground?.template || playgroundData?.template;
+  const activeTemplate: Templates | undefined = (currentPlayground?.template || playgroundData?.template) as Templates | undefined;
 
   const isWebTemplate =
     activeTemplate &&
@@ -255,23 +243,23 @@ const Page = () => {
     const detected = detectLanguageFromFilename(
       activeFile.filename,
       activeFile.fileExtension,
-      baseTemplate
+      baseTemplate as Templates | undefined
     );
 
     if (detected && detected !== activeTemplate) {
-      setCurrentPlayground((prev: any) =>
-        prev ? { ...prev, template: detected } : { template: detected }
-      );
+      queueMicrotask(() => setCurrentPlayground((prev) =>
+        prev ? { ...prev, template: detected } : { id: id || "", template: detected }
+      ));
 
       const isTargetWeb = ["REACT", "NEXTJS", "EXPRESS", "VUE", "HONO", "ANGULAR"].includes(detected);
       if (!isTargetWeb) {
         useExecutionStore.getState().setPreviewUrl(null);
-        setActiveBottomTab("terminal");
+        queueMicrotask(() => setActiveBottomTab("terminal"));
       }
 
-      if (id) {
-        updatePlaygroundTemplate(id, detected).catch(console.error);
-      }
+      // if (id) {
+      //   updatePlaygroundTemplate(id, detected).catch(console.error);
+      // }
 
       toast.info(`Language set to ${detected} for .${activeFile.fileExtension}`);
     }
@@ -317,54 +305,40 @@ const Page = () => {
     [activeTemplate]
   );
 
-  const [previewKey, setPreviewKey] = useState(0);
-  const [isCopied, setIsCopied] = useState(false);
   const previewIframeRef = useRef<HTMLIFrameElement | null>(null);
 
-  const handleOpenInNewTab = useCallback(() => {
-    if (!previewUrl) {
-      toast.info("Development server is not running yet. Click 'Run' to start it.");
-      return;
-    }
+  const handleSave = useCallback(async () => {
+    if (!templateData) return;
 
-    try {
-      const newTab = window.open(previewUrl, "_blank", "noopener");
-      if (!newTab || newTab.closed || typeof newTab.closed === "undefined") {
-        // Fallback for strict pop-up blockers
-        const a = document.createElement("a");
-        a.href = previewUrl;
-        a.target = "_blank";
-        a.rel = "noopener";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+    // Merge unsaved open file changes into templateData tree
+    const snapshot = createProjectSnapshot(templateData, openFiles, activeFileId);
+    await saveTemplateData(snapshot.folderTree);
+
+    // Update in-memory openFiles to clear unsaved flags
+    setOpenFiles(
+      openFiles.map((file) => ({
+        ...file,
+        hasUnsavedChanges: false,
+        originalContent: file.content,
+      }))
+    );
+  }, [templateData, openFiles, activeFileId, saveTemplateData, setOpenFiles]);
+
+  // Intercept Ctrl+S / Cmd+S globally to save in the code editor instead of triggering browser "Save As"
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        e.stopPropagation();
+        handleSave();
       }
-    } catch (err) {
-      console.error("Failed to open preview in new tab:", err);
-      window.open(previewUrl, "_blank");
-    }
-  }, [previewUrl]);
+    };
 
-  const handleRefreshPreview = useCallback(() => {
-    if (!previewUrl) return;
-    setPreviewKey((k) => k + 1);
-    toast.success("Preview reloaded");
-  }, [previewUrl]);
-
-  const handleCopyPreviewUrl = useCallback(() => {
-    if (!previewUrl) return;
-    navigator.clipboard.writeText(previewUrl).then(() => {
-      setIsCopied(true);
-      toast.success("Preview URL copied to clipboard");
-      setTimeout(() => setIsCopied(false), 1000);
-    });
-  }, [previewUrl]);
-
-  const handleSave = async () => {
-    if (templateData) {
-      await saveTemplateData(templateData);
-    }
-  };
+    window.addEventListener("keydown", handleKeyDown, { capture: true });
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown, { capture: true });
+    };
+  }, [handleSave]);
 
   // Language Switcher Handler
   const handleLanguageSwitch = useCallback(
@@ -380,8 +354,8 @@ const Page = () => {
         }
 
         // 2. Update local state
-        setCurrentPlayground((prev: any) =>
-          prev ? { ...prev, template: newTemplate } : { template: newTemplate }
+        setCurrentPlayground((prev) =>
+          prev ? { ...prev, template: newTemplate } : { id: id || "", template: newTemplate }
         );
 
         // 3. Check for language entrypoint without deleting existing files
@@ -417,16 +391,17 @@ const Page = () => {
 
         const target = entrypointMap[newTemplate];
         if (target && templateData) {
-          const findFile = (folder: any): TemplateFile | null => {
+          const findFile = (folder: TemplateFolder | { items?: (TemplateFile | TemplateFolder)[] }): TemplateFile | null => {
             if (!folder || !folder.items) return null;
             for (const item of folder.items) {
               if (
+                "filename" in item &&
                 item.filename === target.filename &&
                 item.fileExtension === target.fileExtension
               ) {
-                return item;
+                return item as TemplateFile;
               }
-              if (item.items) {
+              if ("items" in item && item.items) {
                 const nested = findFile(item);
                 if (nested) return nested;
               }
@@ -461,7 +436,7 @@ const Page = () => {
         }
 
         toast.success(`Switched language to ${newTemplate}`);
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("Language switch error:", err);
         toast.error("Failed to switch language");
       }
@@ -472,10 +447,10 @@ const Page = () => {
   return (
     <TooltipProvider>
       <div className="flex h-screen w-screen overflow-hidden bg-background">
-        {/* @ts-ignore */}
         <ResizablePanelGroup
           direction="horizontal"
           className="h-full w-full"
+          suppressHydrationWarning
         >
           {/* Resizable Sidebar Panel */}
           <ResizablePanel
@@ -484,11 +459,12 @@ const Page = () => {
             minSize="14%"
             maxSize="45%"
             collapsible={true}
-            onResize={(panelSize: any) => {
+            suppressHydrationWarning
+            onResize={(panelSize: PanelSize) => {
               const pct =
                 typeof panelSize === "number"
                   ? panelSize
-                  : panelSize?.asPercentage;
+                  : (panelSize as { asPercentage?: number })?.asPercentage;
               if (
                 pct &&
                 !isNaN(pct) &&
@@ -535,6 +511,7 @@ const Page = () => {
           <ResizablePanel
             defaultSize={`${100 - sidebarDefaultSize}%`}
             minSize="55%"
+            suppressHydrationWarning
             className="h-full min-w-0 flex flex-col overflow-hidden"
           >
             <SidebarInset className="flex-1 flex flex-col h-full min-w-0 overflow-hidden">
@@ -738,7 +715,7 @@ const Page = () => {
 
                     {/* Editor + Terminal Resizable Panels */}
                     <div className="flex-1 overflow-hidden">
-                      {/* @ts-ignore */}
+                      
                       <ResizablePanelGroup
                         direction="vertical"
                         className="h-full"
@@ -754,6 +731,7 @@ const Page = () => {
                             onContentChange={(value) =>
                               activeFileId && updateFileContent(activeFileId, value)
                             }
+                            onSave={handleSave}
                           />
                         </ResizablePanel>
 
@@ -832,74 +810,21 @@ const Page = () => {
                                       }`}
                                     >
                                       {previewUrl ? (
-                                        <>
-                                          {/* Browser Preview Address Bar */}
-                                          <div className="flex items-center justify-between px-3 py-1.5 bg-[#0D1117] border-b border-zinc-800/80 text-xs gap-2 shrink-0">
-                                            <div className="flex items-center gap-1.5">
-                                              <button
-                                                onClick={handleRefreshPreview}
-                                                className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
-                                                title="Reload preview"
-                                              >
-                                                <RotateCw className="size-3.5" />
-                                              </button>
-                                            </div>
-
-                                            <div className="flex-1 max-w-lg mx-2 flex items-center bg-[#161B22] border border-zinc-800 rounded-md px-2.5 py-1 text-xs text-zinc-300 font-mono">
-                                              <span className="size-2 rounded-full mr-2 shrink-0 bg-emerald-400 animate-pulse" />
-                                              <span className="truncate flex-1 select-all text-[11px]">
-                                                {previewUrl}
-                                              </span>
-                                            </div>
-
-                                            <div className="flex items-center gap-1.5">
-                                              <button
-                                                onClick={handleCopyPreviewUrl}
-                                                className="flex items-center gap-1 px-2 py-1 rounded bg-zinc-800/60 hover:bg-zinc-800 text-zinc-300 hover:text-white transition-colors text-[11px]"
-                                                title="Copy preview URL"
-                                              >
-                                                {isCopied ? (
-                                                  <>
-                                                    <Check className="size-3 text-emerald-400" />
-                                                    <span className="text-emerald-400">Copied</span>
-                                                  </>
-                                                ) : (
-                                                  <>
-                                                    <Copy className="size-3" />
-                                                    <span>Copy</span>
-                                                  </>
-                                                )}
-                                              </button>
-
-                                              <button
-                                                onClick={handleOpenInNewTab}
-                                                className="flex items-center gap-1 px-2 py-1 rounded bg-zinc-800/60 hover:bg-zinc-800 text-zinc-300 hover:text-white transition-colors text-[11px]"
-                                                title="Open preview in new browser tab"
-                                              >
-                                                <span>Open in new tab</span>
-                                                <ExternalLink className="size-3" />
-                                              </button>
-                                            </div>
-                                          </div>
-
-                                          {/* Embedded Iframe */}
-                                          <div className="flex-1 w-full h-full relative overflow-hidden">
-                                            <iframe
-                                              key={previewKey}
-                                              ref={previewIframeRef}
-                                              src={previewUrl}
-                                              className="w-full h-full border-0 bg-white"
-                                              title="Application Preview"
-                                              sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-presentation allow-same-origin allow-scripts"
-                                            />
-                                          </div>
-                                        </>
+                                        <div className="flex-1 w-full h-full relative overflow-hidden">
+                                          <iframe
+                                            ref={previewIframeRef}
+                                            src={previewUrl}
+                                            className="w-full h-full border-0 bg-white"
+                                            title="Application Preview"
+                                            sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-presentation allow-same-origin allow-scripts"
+                                          />
+                                        </div>
                                       ) : (
                                         <div className="flex flex-col items-center justify-center flex-1 gap-2 text-zinc-500 text-xs">
                                           <Globe className="size-8 text-zinc-600 animate-pulse" />
                                           <p className="font-medium text-zinc-400">Development server is not running.</p>
                                           <p className="text-[11px] text-zinc-600">
-                                            Click "Run" in the top bar to launch the application and preview it here.
+                                            Click &quot;Run&quot; in the top bar to launch the application and preview it here.
                                           </p>
                                         </div>
                                       )}

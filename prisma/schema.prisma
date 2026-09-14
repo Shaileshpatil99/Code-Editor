@@ -76,6 +76,8 @@ model Playground{
 
   templateFiles TemplateFiles[]
 
+  createdAt DateTime? @default(now())
+  updatedAt DateTime? @updatedAt
 }
 
 model TemplateFiles{

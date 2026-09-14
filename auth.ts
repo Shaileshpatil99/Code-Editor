@@ -11,14 +11,18 @@ async signIn({user,account,profile}){
         return false;
     }
 
+    if (!user.email) {
+        return false;
+    }
+
     const  existinguser = await db.user.findUnique({
-        where:{email:user.email!}
+        where:{email:user.email}
     });
 
     if(!existinguser){
         const newUser = await db.user.create({
             data:{
-                email:user.email!,
+                email:user.email,
                 name:user.name,
                 image:user.image,
 

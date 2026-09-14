@@ -1,10 +1,15 @@
 import { NextRequest } from "next/server";
 import { getProcess } from "@/lib/process-registry";
+import { auth } from "@/auth";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const { runId, data } = await req.json();
 
     if (!runId || typeof data !== "string") {
@@ -31,10 +36,10 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error writing to process stdin:", error);
     return Response.json(
-      { error: error?.message || "Failed to write stdin" },
+      { error: error instanceof Error ? error.message : "Failed to write stdin" },
       { status: 500 }
     );
   }

@@ -42,8 +42,8 @@ export async function GET(
   }
 
   try {
-    const inputPath = path.join(process.cwd(), templatePath);
-    const outputFile = path.join(process.cwd(), `output/${templateKey}.json`);
+    const inputPath = path.join(/*turbopackIgnore: true*/ process.cwd(), templatePath);
+    const outputFile = path.join(/*turbopackIgnore: true*/ process.cwd(), `output/${templateKey}.json`);
 
     console.log("Input Path:", inputPath);
     console.log("Output Path:", outputFile);

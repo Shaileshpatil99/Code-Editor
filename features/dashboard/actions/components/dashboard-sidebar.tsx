@@ -1,6 +1,5 @@
 "use client"
 
-import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
@@ -19,6 +18,7 @@ import {
   Zap,
   Database,
   FlameIcon,
+  Coffee,
 } from "lucide-react"
 
 import {
@@ -53,6 +53,7 @@ const lucideIconMap: Record<string, LucideIcon> = {
   FlameIcon: FlameIcon,
   Terminal: Terminal,
   Code2: Code2,
+  Coffee: Coffee,
 }
 
 export function DashboardSidebar({
@@ -62,12 +63,8 @@ export function DashboardSidebar({
 }) {
   const pathname = usePathname()
 
-  const [starredPlaygrounds, setStarredPlaygrounds] = useState(
-    initialPlaygroundData.filter((p) => p.starred)
-  )
-
-  const [recentPlaygrounds, setRecentPlaygrounds] =
-    useState(initialPlaygroundData)
+  const starredPlaygrounds = initialPlaygroundData.filter((p) => p.starred);
+  const recentPlaygrounds = initialPlaygroundData;
 
   return (
     <Sidebar>
@@ -197,16 +194,7 @@ export function DashboardSidebar({
                 )
               })}
 
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  render={<Link href="/playgrounds" />}
-                  tooltip="View all"
-                >
-                  <span className="text-sm text-muted-foreground">
-                    View all playgrounds
-                  </span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+
 
             </SidebarMenu>
           </SidebarGroupContent>

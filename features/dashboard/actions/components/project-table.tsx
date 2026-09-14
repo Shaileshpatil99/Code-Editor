@@ -76,13 +76,13 @@ interface EditProjectData {
 interface ProjectTableProps {
   projects: Project[];
 
-  onUpdateProject?: (id: string, data: EditProjectData) => Promise<any>;
+  onUpdateProject?: (id: string, data: EditProjectData) => Promise<unknown>;
 
-  onDeleteProject?: (id: string) => Promise<any>;
+  onDeleteProject?: (id: string) => Promise<unknown>;
 
-  onDuplicateProject?: (id: string) => Promise<any>;
+  onDuplicateProject?: (id: string) => Promise<Project | unknown>;
 
-  onMarkasFavorite?: (id: string) => Promise<any>;
+  onMarkasFavorite?: (id: string) => Promise<unknown>;
 }
 
 /* ==========================================
@@ -118,10 +118,23 @@ export default function ProjectTable({
 
   const [isLoading, setIsLoading] = useState(false);
 
-  const [favorites, setFavorites] = useState<Record<string, boolean>>({});
+  const [favorites, setFavorites] = useState<Record<string, boolean>>(() => {
+    const initialFavs: Record<string, boolean> = {};
+    projects.forEach((p: Project & { Starmark?: { isMarked: boolean }[] }) => {
+      initialFavs[p.id] = p.Starmark?.[0]?.isMarked || false;
+    });
+    return initialFavs;
+  });
 
   useEffect(() => {
-    setProjectList(projects);
+    queueMicrotask(() => {
+      setProjectList(projects);
+      const initialFavs: Record<string, boolean> = {};
+      projects.forEach((p: Project & { Starmark?: { isMarked: boolean }[] }) => {
+        initialFavs[p.id] = p.Starmark?.[0]?.isMarked || false;
+      });
+      setFavorites(initialFavs);
+    });
   }, [projects]);
 
   /* ==========================================
@@ -132,7 +145,7 @@ export default function ProjectTable({
     setEditProject(project);
 
     setEditData({
-      title: project.title,
+      title: project.title || "",
       description: project.description || "",
     });
   };
@@ -171,7 +184,7 @@ export default function ProjectTable({
           project.id === editProject.id
             ? {
                 ...project,
-                ...updatedProject,
+                ...(updatedProject as Partial<Project>),
                 title: editData.title,
                 description: editData.description,
               }
@@ -248,7 +261,7 @@ export default function ProjectTable({
          * Immediately add duplicated
          * project to the table.
          */
-        setProjectList((prev) => [duplicatedProject, ...prev]);
+        setProjectList((prev) => [duplicatedProject as Project, ...prev]);
       }
 
       toast.success("Project duplicated successfully");
@@ -339,7 +352,7 @@ export default function ProjectTable({
 
             <TableBody>
               {projectList.map((project) => {
-                const projectDate = new Date(project.createdAt);
+                const projectDate = project.createdAt ? new Date(project.createdAt) : null;
 
                 const isFavorite = favorites[project.id] || false;
 
@@ -382,7 +395,7 @@ export default function ProjectTable({
                     {/* CREATED */}
 
                     <TableCell className="py-3 whitespace-nowrap">
-                      {isValid(projectDate)
+                      {projectDate && isValid(projectDate)
                         ? format(projectDate, "MMM d, yyyy")
                         : "—"}
                     </TableCell>
@@ -619,9 +632,9 @@ export default function ProjectTable({
             <AlertDialogTitle>Delete Project?</AlertDialogTitle>
 
             <AlertDialogDescription>
-              Are your sure you want to delete. This will permanently delete{" "}
+              Are you sure you want to delete. This will permanently delete{" "}
               <span className="text-semibold text-red-500">
-                "{deleteProject?.title}"
+                &quot;{deleteProject?.title}&quot;
               </span>
               .
             </AlertDialogDescription>

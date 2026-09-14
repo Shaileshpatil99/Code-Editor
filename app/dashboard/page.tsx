@@ -10,21 +10,21 @@ const Page = async() => {
 
   return (
     <div className='flex flex-col justify-start items-center min-h-screen mx-auto max-w-7xl px-4 py-10'>
-      <div className='grid gird-cols-1 md:grid-cols-2 gap-6 w-full'>
+      <div className='grid grid-cols-1 md:grid-cols-2 gap-6 w-full'>
         <AddNewButton/>
         <AddRepoButton/>
       </div>
 
-      <div className='mt-10 flex flex-col justify-center intems-center w-full'>
+      <div className='mt-10 flex flex-col justify-center items-center w-full'>
     {
       playgrounds && playgrounds.length === 0 ? (<EmptyState title='No project Found' description='Create a new project to get started' imageSrc='/empty-state.svg'/>) : (
           <ProjectTable
           
-            projects={(playgrounds as any) || []}
+            projects={(playgrounds as unknown as React.ComponentProps<typeof ProjectTable>['projects']) || []}
             onDeleteProject={deleteProjectById}
             onUpdateProject={editProjectById}
             onDuplicateProject={duplicateProjectById}
-             onMarkasFavorite={toggleProjectFavorite}
+            onMarkasFavorite={toggleProjectFavorite}
           />
       )
     }

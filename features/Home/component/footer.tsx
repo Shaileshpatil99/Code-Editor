@@ -1,16 +1,13 @@
 import Link from "next/link";
 import { FaGithub } from "react-icons/fa";
-import Image from "next/image";
-import { FcGoogle } from "react-icons/fc";
 
 
 export function Footer() {
   const socialLinks = [
     {
-      href: "#",
+      href: "https://github.com/Shaileshpatil99/Code-Editor",
       icon: (
         <FaGithub className="w-5 h-5 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors" />
-        
       ),
     },
   ];

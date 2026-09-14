@@ -31,12 +31,20 @@ function getStoredTerminalSettings(): TerminalSettings {
 }
 
 export function useTerminalSettings() {
-  const [settings, setSettings] = useState<TerminalSettings>(DEFAULT_TERMINAL_SETTINGS);
+  const [settings, setSettings] = useState<TerminalSettings>(() => {
+    if (typeof window === "undefined") return DEFAULT_TERMINAL_SETTINGS;
+    try {
+      const item = localStorage.getItem(STORAGE_KEY);
+      if (!item) return DEFAULT_TERMINAL_SETTINGS;
+      return { ...DEFAULT_TERMINAL_SETTINGS, ...JSON.parse(item) };
+    } catch {
+      return DEFAULT_TERMINAL_SETTINGS;
+    }
+  });
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    setSettings(getStoredTerminalSettings());
-    setIsLoaded(true);
+    queueMicrotask(() => setIsLoaded(true));
 
     const handleSync = () => {
       setSettings(getStoredTerminalSettings());

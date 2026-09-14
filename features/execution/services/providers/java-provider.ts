@@ -49,6 +49,7 @@ export class JavaExecutionProvider implements IExecutionProvider {
           files: context.files,
           sourceFiles: context.sourceFiles,
           mainClass: detection.mainClass,
+          activeFile: context.activeFile,
         }),
         signal: this.abortController.signal,
       });
@@ -89,8 +90,8 @@ export class JavaExecutionProvider implements IExecutionProvider {
           }
         }
       }
-    } catch (err: any) {
-      if (err.name === "AbortError") {
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === "AbortError") {
         onEvent({
           type: "stdout",
           data: "\r\n\x1b[33m[Execution stopped by user]\x1b[0m\r\n",
@@ -99,7 +100,7 @@ export class JavaExecutionProvider implements IExecutionProvider {
       } else {
         onEvent({
           type: "stderr",
-          data: `\r\n\x1b[31m[Connection error: ${err.message}]\x1b[0m\r\n`,
+          data: `\r\n\x1b[31m[Connection error: ${err instanceof Error ? err.message : String(err)}]\x1b[0m\r\n`,
         });
         onEvent({ type: "status", status: "FAILED" });
       }

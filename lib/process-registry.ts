@@ -28,11 +28,23 @@ export function killProcessTree(pid: number): Promise<void> {
       resolve();
       return;
     }
-    // /T terminates specified process and any child processes started by it
-    // /F forcefully terminates
-    exec(`taskkill /pid ${pid} /T /F`, () => {
+    
+    if (process.platform === "win32") {
+      // /T terminates specified process and any child processes started by it
+      // /F forcefully terminates
+      exec(`taskkill /pid ${pid} /T /F`, () => {
+        resolve();
+      });
+    } else {
+      try {
+        process.kill(-pid, "SIGKILL");
+      } catch {
+        try {
+          process.kill(pid, "SIGKILL");
+        } catch {}
+      }
       resolve();
-    });
+    }
   });
 }
 

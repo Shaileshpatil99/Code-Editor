@@ -2,8 +2,8 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Search, ChevronRight, BookOpen, Code2, Cpu, Terminal, Activity } from "lucide-react";
-import { DOC_CATEGORIES, DocCategory } from "../data/docs-data";
+import { Search, BookOpen, Code2, Terminal, Activity } from "lucide-react";
+import { DOC_CATEGORIES } from "../data/docs-data";
 
 interface DocsSidebarProps {
   activeDocId: string;

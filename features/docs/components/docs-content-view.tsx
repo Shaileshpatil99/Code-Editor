@@ -8,8 +8,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Terminal,
-  Sparkles,
-  CheckCircle2,
   Info,
   Lightbulb,
   AlertTriangle,

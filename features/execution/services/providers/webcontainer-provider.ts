@@ -75,6 +75,7 @@ export class WebContainerProvider implements IExecutionProvider {
   readonly name = "WebContainer (Browser Node/NPM)";
   private activeProcess: WebContainerProcess | null = null;
   private inputWriter: WritableStreamDefaultWriter<string> | null = null;
+  private serverReadyTeardown: (() => void) | null = null;
 
   canHandle(template: Templates): boolean {
     return [
@@ -93,15 +94,14 @@ export class WebContainerProvider implements IExecutionProvider {
   ): Promise<void> {
     try {
       onEvent({ type: "status", status: "PREPARING" });
-      onEvent({
-        type: "stdout",
-        data: "\x1b[36m[Booting WebContainer browser runtime...]\x1b[0m\r\n",
-      });
 
       const instance = await getWebContainer();
 
       // Listen for local server ready to set iframe preview URL
-      instance.on("server-ready", (port, url) => {
+      if (this.serverReadyTeardown) {
+        this.serverReadyTeardown();
+      }
+      this.serverReadyTeardown = instance.on("server-ready", (port, url) => {
         onEvent({
           type: "stdout",
           data: `\r\n\x1b[32;1m[Web server ready on port ${port}: ${url}]\x1b[0m\r\n`,
@@ -119,10 +119,12 @@ export class WebContainerProvider implements IExecutionProvider {
 
       // Check if package.json exists to run npm install
       if (context.files["package.json"]) {
-        let pkg: any = {};
+        let pkg: { scripts?: Record<string, string> } = {};
         try {
           pkg = JSON.parse(context.files["package.json"]);
-        } catch (e) {}
+        } catch {
+          // ignore JSON parse error
+        }
 
         onEvent({
           type: "stdout",
@@ -130,6 +132,7 @@ export class WebContainerProvider implements IExecutionProvider {
         });
 
         const installProcess = await instance.spawn("npm", ["install"]);
+        this.activeProcess = installProcess;
         installProcess.output.pipeTo(
           new WritableStream({
             write(chunk) {
@@ -226,11 +229,11 @@ export class WebContainerProvider implements IExecutionProvider {
           onEvent({ type: "status", status: "FAILED" });
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("WebContainer execution error:", err);
       onEvent({
         type: "stderr",
-        data: `\r\n\x1b[31m[WebContainer Error: ${err?.message || err}]\x1b[0m\r\n`,
+        data: `\r\n\x1b[31m[WebContainer Error: ${err instanceof Error ? err.message : String(err)}]\x1b[0m\r\n`,
       });
       onEvent({ type: "status", status: "FAILED" });
     } finally {
@@ -272,8 +275,8 @@ export class WebContainerProvider implements IExecutionProvider {
 
       const exitCode = await this.activeProcess.exit;
       return exitCode;
-    } catch (err: any) {
-      onOutput(`\r\n\x1b[31m[Command error: ${err.message}]\x1b[0m\r\n`);
+    } catch (err: unknown) {
+      onOutput(`\r\n\x1b[31m[Command error: ${err instanceof Error ? err.message : String(err)}]\x1b[0m\r\n`);
       return 1;
     } finally {
       this.activeProcess = null;

@@ -45,7 +45,7 @@ const ALL_TEMPLATES_CONFIG: Record<
   C: { id: "C", label: "C", sublabel: "(gcc)", icon: Code2 },
   JAVA: { id: "JAVA", label: "Java", sublabel: "(OpenJDK)", icon: Coffee },
   PYTHON: { id: "PYTHON", label: "Python", sublabel: "(Python 3)", icon: Terminal },
-} as any;
+} as Record<string, { id: string; label: string; sublabel: string; icon: React.ComponentType<{ className?: string }> }>;
 
 export const ExecutionActionBar: React.FC<ExecutionActionBarProps> = ({
   template,

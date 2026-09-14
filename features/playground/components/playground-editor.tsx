@@ -14,20 +14,34 @@ interface PlaygroundEditorProps {
   activeFile: TemplateFile | undefined;
   Content: string;
   onContentChange: (value: string) => void;
+  onSave?: () => void;
 }
 
 const PlaygroundEditor = ({
   activeFile,
   Content,
   onContentChange,
+  onSave,
 }: PlaygroundEditorProps) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const editorRef = useRef<any>(null);
   const monacoRef = useRef<Monaco | null>(null);
   const { settings } = useEditorSettings();
+  const onSaveRef = useRef(onSave);
 
+  useEffect(() => {
+    onSaveRef.current = onSave;
+  }, [onSave]);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleEditorDidMount = (editor: any, monaco: Monaco) => {
     editorRef.current = editor;
     monacoRef.current = monaco;
+
+    // Intercept Ctrl+S / Cmd+S inside Monaco editor to save in the playground
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+      onSaveRef.current?.();
+    });
 
     configureMonaco(monaco);
     updateEditorLanguage();
@@ -75,7 +89,7 @@ const PlaygroundEditor = ({
         onChange={(value) => onContentChange(value || "")}
         onMount={handleEditorDidMount}
         language={activeFile ? getEditorLanguage(activeFile.fileExtension || "") : "plaintext"}
-        //@ts-ignore
+        // @ts-expect-error - Monaco editor options type mismatch
         options={{
           ...defaultEditorOptions,
           fontSize: settings.fontSize,
